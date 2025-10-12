@@ -34,9 +34,6 @@ dependencies = [
 [package.metadata]
 requires-dist = [{ name = "nltk", specifier = "==3.9.1" }]
 
-[package.metadata.requires-dev]
-dev = []
-
 [[package]]
 name = "joblib"
 version = "1.5.2"
