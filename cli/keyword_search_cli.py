@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import math
 
 from lib.keyword_search import search_command
 from lib.inverted_index import InvertedIndex
@@ -23,6 +24,11 @@ def main() -> None:
     _ = tf_parser.add_argument("doc_id", type=str, help="Docuement ID")
     _ = tf_parser.add_argument("term", type=str, help="Term for which count is needed")
 
+    idf_parser = subparsers.add_parser(
+        "idf", help="Returns the Inverse Document Frequecy number"
+    )
+    _ = idf_parser.add_argument("term", type=str, help="Term for which idf in needed")
+
     args = parser.parse_args()
 
     match args.command:
@@ -39,6 +45,12 @@ def main() -> None:
             inv_idx.load()
             count = inv_idx.get_tf(args.doc_id, args.term)
             print(count)
+        case "idf":
+            inv_idx = InvertedIndex()
+            inv_idx.load()
+            docs = search_command(args.term, len(inv_idx.docmap))
+            idf = math.log((len(inv_idx.docmap) + 1) / (len(docs) + 1))
+            print(f"Inverse document frequecy of '{args.term}': {idf:.2f}")
         case _:
             parser.print_help()
 
