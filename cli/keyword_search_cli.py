@@ -17,6 +17,12 @@ def main() -> None:
         "build", help="Build the Inverted Index on the movie data"
     )
 
+    tf_parser = subparsers.add_parser(
+        "tf", help="Returns the number of time a term appears in the document"
+    )
+    _ = tf_parser.add_argument("doc_id", type=str, help="Docuement ID")
+    _ = tf_parser.add_argument("term", type=str, help="Term for which count is needed")
+
     args = parser.parse_args()
 
     match args.command:
@@ -28,8 +34,11 @@ def main() -> None:
         case "build":
             inv_idx = InvertedIndex()
             inv_idx.build()
-            inv_idx.save()
-            docs = inv_idx.get_document("merida")
+        case "tf":
+            inv_idx = InvertedIndex()
+            inv_idx.load()
+            count = inv_idx.get_tf(args.doc_id, args.term)
+            print(count)
         case _:
             parser.print_help()
 
