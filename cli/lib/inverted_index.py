@@ -8,6 +8,7 @@ from .search_utils import (
     tokenize_text,
     load_movies,
     PROJECT_ROOT,
+    BM25_K1,
 )
 
 
@@ -89,3 +90,8 @@ class InvertedIndex:
         N = len(self.docmap)
         df = len(self.get_document(tokens[0]))
         return math.log((N - df + 0.5) / (df + 0.5) + 1)
+
+    def get_bm25_tf(self, doc_id: int, term: str, k1: float = BM25_K1) -> float:
+        tf = self.get_tf(doc_id, term)
+        tf_component = (tf * (k1 + 1)) / (tf + k1)
+        return tf_component
