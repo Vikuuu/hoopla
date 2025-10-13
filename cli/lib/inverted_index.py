@@ -9,6 +9,7 @@ from .search_utils import (
     load_movies,
     PROJECT_ROOT,
     BM25_K1,
+    BM25_B,
 )
 
 
@@ -17,12 +18,14 @@ class InvertedIndex:
         self.attribute: dict[str, set] = {}
         self.docmap: dict[int, str] = {}
         self.term_frequencies: dict[int, Counter] = defaultdict(Counter)
+        self.doc_lengths: dict[int, int] = {}
 
         self.__index_path = os.path.join(PROJECT_ROOT, "cache", "index.pkl")
         self.__docmap_path = os.path.join(PROJECT_ROOT, "cache", "docmap.pkl")
         self.__term_freq_path = os.path.join(
             PROJECT_ROOT, "cache", "term_frequencies.pkl"
         )
+        self.__doc_lenghts_path = os.path.join(PROJECT_ROOT, "cache", "doc_lengths.pkl")
 
     def __add_document(self, doc_id: int, text: str):
         tokens: list[str] = tokenize_text(text)
@@ -35,6 +38,7 @@ class InvertedIndex:
 
             self.attribute[token].add(doc_id)
         self.term_frequencies[doc_id] = Counter(tokens)
+        self.doc_lengths[doc_id] = len(tokens)
 
     def get_document(self, term: str):
         results = []
@@ -57,6 +61,7 @@ class InvertedIndex:
         index_data = pickle.dumps(self.attribute)
         docmap_data = pickle.dumps(self.docmap)
         term_freq_data = pickle.dumps(self.term_frequencies)
+        doc_len_data = pickle.dumps(self.doc_lengths)
         os.mkdir(os.path.join(PROJECT_ROOT, "cache"))
 
         with open(self.__index_path, "wb") as f:
@@ -65,6 +70,8 @@ class InvertedIndex:
             f.write(docmap_data)
         with open(self.__term_freq_path, "wb") as f:
             f.write(term_freq_data)
+        with open(self.__doc_lenghts_path, "wb") as f:
+            f.write(doc_len_data)
 
     def load(self):
         try:
@@ -74,6 +81,8 @@ class InvertedIndex:
                 self.docmap = pickle.load(f)
             with open(self.__term_freq_path, "rb") as f:
                 self.term_frequencies = pickle.load(f)
+            with open(self.__doc_lenghts_path, "rb") as f:
+                self.doc_lengths = pickle.load(f)
         except Exception as e:
             print(f"{e}")
 
@@ -91,7 +100,17 @@ class InvertedIndex:
         df = len(self.get_document(tokens[0]))
         return math.log((N - df + 0.5) / (df + 0.5) + 1)
 
-    def get_bm25_tf(self, doc_id: int, term: str, k1: float = BM25_K1) -> float:
+    def get_bm25_tf(
+        self, doc_id: int, term: str, k1: float = BM25_K1, b: float = BM25_B
+    ) -> float:
+        len_norm = 1 - b + b * (self.doc_lengths[doc_id] / self.__get_avg_doc_length())
         tf = self.get_tf(doc_id, term)
-        tf_component = (tf * (k1 + 1)) / (tf + k1)
+        tf_component = (tf * (k1 + 1)) / (tf + k1 * len_norm)
         return tf_component
+
+    def __get_avg_doc_length(self) -> float:
+        total_doc_len = sum(self.doc_lengths.values(), start=0)
+        if total_doc_len == 0:
+            return 0.0
+
+        return total_doc_len / len(self.doc_lengths)
