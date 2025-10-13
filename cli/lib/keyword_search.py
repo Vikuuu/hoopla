@@ -9,7 +9,6 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
     # movies = load_movies()
     inv_idx = InvertedIndex()
     inv_idx.load()
-
     results = []
     query_tokens = tokenize_text(query)
     for token in query_tokens:

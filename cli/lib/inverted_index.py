@@ -1,5 +1,6 @@
 import pickle
 import os
+import math
 
 from collections import Counter, defaultdict
 
@@ -80,3 +81,11 @@ class InvertedIndex:
         if len(tokens) > 1:
             raise Exception("Len to tokens greater that 1")
         return self.term_frequencies[int(doc_id)][tokens[0]]
+
+    def get_bm25_idf(self, term: str) -> float:
+        tokens = tokenize_text(term)
+        if len(tokens) > 1:
+            raise Exception("Len to tokens greater that 1")
+        N = len(self.docmap)
+        df = len(self.get_document(tokens[0]))
+        return math.log((N - df + 0.5) / (df + 0.5) + 1)
