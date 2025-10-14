@@ -10,6 +10,7 @@ from .search_utils import (
     PROJECT_ROOT,
     BM25_K1,
     BM25_B,
+    format_search_result,
 )
 
 
@@ -92,6 +93,13 @@ class InvertedIndex:
             raise Exception("Len to tokens greater that 1")
         return self.term_frequencies[int(doc_id)][tokens[0]]
 
+    def get_idf(self, doc_id: int, term: str) -> float:
+        tokens = tokenize_text(term)
+        if len(tokens) != 1:
+            raise ValueError("term must be a single token")
+        token = tokens[0]
+        return self.term_frequencies[doc_id][token]
+
     def get_bm25_idf(self, term: str) -> float:
         tokens = tokenize_text(term)
         if len(tokens) > 1:
@@ -103,14 +111,53 @@ class InvertedIndex:
     def get_bm25_tf(
         self, doc_id: int, term: str, k1: float = BM25_K1, b: float = BM25_B
     ) -> float:
-        len_norm = 1 - b + b * (self.doc_lengths[doc_id] / self.__get_avg_doc_length())
         tf = self.get_tf(doc_id, term)
+        doc_length = self.doc_lengths.get(doc_id, 0)
+        avg_doc_length = self.__get_avg_doc_length()
+        if avg_doc_length > 0:
+            len_norm = 1 - b + b * (doc_length / avg_doc_length)
+        else:
+            len_norm = 1
         tf_component = (tf * (k1 + 1)) / (tf + k1 * len_norm)
         return tf_component
 
     def __get_avg_doc_length(self) -> float:
-        total_doc_len = sum(self.doc_lengths.values(), start=0)
-        if total_doc_len == 0:
+        if not self.doc_lengths or len(self.doc_lengths) == 0:
             return 0.0
+        total_len = 0
+        for length in self.doc_lengths.values():
+            total_len += length
+        return total_len / len(self.doc_lengths)
 
-        return total_doc_len / len(self.doc_lengths)
+    def bm25(self, doc_id: int, term: str) -> float:
+        return self.get_bm25_tf(doc_id, term) * self.get_bm25_idf(term)
+
+    def bm25_search(self, query: str, limit: int) -> dict[int, float]:
+        query_tokens: list[str] = tokenize_text(query)
+        scores: dict[int, float] = {}
+
+        for doc_id in self.docmap:
+            score = 0.0
+            for token in query_tokens:
+                score += self.bm25(doc_id, token)
+            scores[doc_id] = score
+
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+        results = []
+        for doc_id, score in sorted_scores[:limit]:
+            doc = self.docmap[doc_id]
+            formatted_result = format_search_result(
+                doc_id=doc["id"],
+                title=doc["title"],
+                document=doc["description"],
+                score=score,
+            )
+            results.append(formatted_result)
+
+        return results
+
+    def get_tf_idf(self, doc_id: int, term: str) -> float:
+        tf = self.get_tf(doc_id, term)
+        idf = self.get_idf(term)
+        return tf * idf
