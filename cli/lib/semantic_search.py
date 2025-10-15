@@ -22,7 +22,7 @@ class SemanticSearch:
         embedding = self.model.encode([text])[0]
         return embedding
 
-    def build_embedding(self, documents):
+    def build_embedding(self, documents: list[str]):
         self.documents = documents
         for document in documents:
             self.document_map[document["id"]] = document
@@ -37,7 +37,7 @@ class SemanticSearch:
 
         return self.embeddings
 
-    def load_or_create_embeddings(self, documents):
+    def load_or_create_embeddings(self, documents: list[str]):
         self.documents = documents
         for document in documents:
             self.document_map[document["id"]] = document
@@ -72,3 +72,11 @@ def verify_embeddings():
     print(
         f"Embeddings shape: {embeddings.shape[0]} vectors in {embeddings.shape[1]} dimensions"
     )
+
+
+def embed_query_text(query: str):
+    s = SemanticSearch()
+    embedding = s.generate_embedding(query)
+    print(f"Query: {query}")
+    print(f"First 5 dimensions: {embedding[:5]}")
+    print(f"Shape: {embedding.shape}")
