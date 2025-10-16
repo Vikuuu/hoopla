@@ -44,6 +44,12 @@ def main():
         help="Limit the search return",
     )
 
+    chunk_parser = subparsers.add_parser("chunk", help="Chunk size")
+    _ = chunk_parser.add_argument("text", type=str, help="text to chunk")
+    _ = chunk_parser.add_argument(
+        "--chunk-size", nargs="?", type=int, default=200, help="chuck size"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -57,6 +63,17 @@ def main():
             embed_query_text(args.text)
         case "search":
             search(args.query, args.limit)
+        case "chunk":
+            chunked_text = args.text.split()
+            print(f"Chunking {len(args.text)} characters")
+            curr = []
+            x = 1
+            for idx, i in enumerate(chunked_text):
+                curr.append(i)
+                if len(curr) == args.chunk_size or idx == len(chunked_text) - 1:
+                    print(f"{x}. {" ".join(curr)}")
+                    curr = []
+                    x += 1
         case _:
             parser.print_help()
 
