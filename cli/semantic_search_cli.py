@@ -8,8 +8,13 @@ from lib.semantic_search import (
     verify_embeddings,
     embed_query_text,
     search,
+    chunk_text,
 )
-from lib.search_utils import DEFAULT_SEARCH_LIMIT
+from lib.search_utils import (
+    DEFAULT_SEARCH_LIMIT,
+    DEFAULT_OVERLAPPING,
+    DEFAULT_CHUNK_SIZE,
+)
 
 
 def main():
@@ -39,7 +44,6 @@ def main():
     _ = search_parser.add_argument(
         "--limit",
         type=int,
-        # nargs="?",
         default=DEFAULT_SEARCH_LIMIT,
         help="Limit the search return",
     )
@@ -47,7 +51,14 @@ def main():
     chunk_parser = subparsers.add_parser("chunk", help="Chunk size")
     _ = chunk_parser.add_argument("text", type=str, help="text to chunk")
     _ = chunk_parser.add_argument(
-        "--chunk-size", nargs="?", type=int, default=200, help="chuck size"
+        "--chunk-size",
+        nargs="?",
+        type=int,
+        default=DEFAULT_CHUNK_SIZE,
+        help="chuck size",
+    )
+    _ = chunk_parser.add_argument(
+        "--overlap", type=int, default=DEFAULT_OVERLAPPING, help="overlapping in chunks"
     )
 
     args = parser.parse_args()
@@ -64,16 +75,7 @@ def main():
         case "search":
             search(args.query, args.limit)
         case "chunk":
-            chunked_text = args.text.split()
-            print(f"Chunking {len(args.text)} characters")
-            curr = []
-            x = 1
-            for idx, i in enumerate(chunked_text):
-                curr.append(i)
-                if len(curr) == args.chunk_size or idx == len(chunked_text) - 1:
-                    print(f"{x}. {" ".join(curr)}")
-                    curr = []
-                    x += 1
+            chunk_text(args.text, args.chunk_size, args.overlap)
         case _:
             parser.print_help()
 

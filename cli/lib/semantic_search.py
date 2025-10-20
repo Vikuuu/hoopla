@@ -3,7 +3,12 @@ import os
 
 from sentence_transformers import SentenceTransformer
 
-from .search_utils import PROJECT_ROOT, load_movies
+from .search_utils import (
+    PROJECT_ROOT,
+    load_movies,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_OVERLAPPING,
+)
 
 
 class SemanticSearch:
@@ -131,3 +136,32 @@ def search(query: str, limit: int):
     for i, res in enumerate(results, 1):
         print(f"{i}. {res["title"]} (score: {res["score"]})")
         print(f"     {res["description"][:50]}")
+
+
+def fixed_size_chunking(
+    text: str,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    overlap: int = DEFAULT_OVERLAPPING,
+):
+    words = text.split()
+    chunks = []
+
+    n_words = len(words)
+    i = 0
+    while i < n_words - overlap:
+        chunk_words = words[i : i + chunk_size]
+        chunks.append(chunk_words)
+        i += chunk_size - overlap
+
+    return chunks
+
+
+def chunk_text(
+    text: str,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    overlap: int = DEFAULT_OVERLAPPING,
+) -> None:
+    chunks = fixed_size_chunking(text, chunk_size, overlap)
+    print(f"Chunking {len(text)} characters")
+    for i, chunk in enumerate(chunks, 1):
+        print(f"{i}. {" ".join(chunk)}")
