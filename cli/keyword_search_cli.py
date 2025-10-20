@@ -76,7 +76,7 @@ def main() -> None:
             print(f"Searching for: {args.query}")
             res = search_command(args.query)
             for i, m in enumerate(res):
-                print(f"{i}. {m["title"]}")
+                print(f"{i}. {m['title']}")
         case "build":
             inv_idx = InvertedIndex()
             inv_idx.build()
@@ -115,7 +115,7 @@ def main() -> None:
             results = inv.bm25_search(args.query, args.limit)
             for count, result in enumerate(results, 1):
                 print(
-                    f"{count}. ({result["id"]}) {result["title"]} - Score: {result["score"]}"
+                    f"{count}. ({result['id']}) {result['title']} - Score: {result['score']}"
                 )
         case _:
             parser.print_help()

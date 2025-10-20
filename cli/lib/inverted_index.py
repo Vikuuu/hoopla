@@ -53,7 +53,7 @@ class InvertedIndex:
             movie_id = movie["id"]
             assert movie_id
 
-            text = f"{movie["title"]} {movie["description"]}"
+            text = f"{movie['title']} {movie['description']}"
             self.__add_document(movie_id, text)
             self.docmap[movie_id] = movie
         self.save()

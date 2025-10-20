@@ -10,6 +10,7 @@ from lib.semantic_search import (
     search,
     chunk_text,
     semantic_chunk_text,
+    embed_chunks,
 )
 from lib.search_utils import (
     DEFAULT_SEARCH_LIMIT,
@@ -21,14 +22,20 @@ from lib.search_utils import (
 
 def main():
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(
+        dest="command", help="Available commands"
+    )
 
-    verify_parser = subparsers.add_parser("verify", help="Verify the installed model.")
+    verify_parser = subparsers.add_parser(
+        "verify", help="Verify the installed model."
+    )
 
     embed_text_parser = subparsers.add_parser(
         "embed_text", help="Embeds the given text"
     )
-    _ = embed_text_parser.add_argument("text", type=str, help="text to be embedded")
+    _ = embed_text_parser.add_argument(
+        "text", type=str, help="text to be embedded"
+    )
 
     verify_embeddings_parser = subparsers.add_parser(
         "verify_embeddings", help="Load or Creates the embeddings"
@@ -60,7 +67,10 @@ def main():
         help="chuck size",
     )
     _ = chunk_parser.add_argument(
-        "--overlap", type=int, default=DEFAULT_OVERLAPPING, help="overlapping in chunks"
+        "--overlap",
+        type=int,
+        default=DEFAULT_OVERLAPPING,
+        help="overlapping in chunks",
     )
 
     semantic_chunk_parser = subparsers.add_parser(
@@ -84,6 +94,10 @@ def main():
         help="overlapping",
     )
 
+    embed_chunks_parser = subparsers.add_parser(
+        "embed_chunks", help="Chunk embeddings for the documents"
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -101,6 +115,8 @@ def main():
             chunk_text(args.text, args.chunk_size, args.overlap)
         case "semantic_chunk":
             semantic_chunk_text(args.text, args.max_chunk_size, args.overlap)
+        case "embed_chunks":
+            embed_chunks()
         case _:
             parser.print_help()
 
