@@ -1,25 +1,26 @@
 import json
 import os
-import string
-
 from typing import Any
 
-from nltk import PorterStemmer
-
-
 DEFAULT_SEARCH_LIMIT = 5
-SCORE_PRECISION = 2
-
-DEFAULT_CHUNK_SIZE = 200
-DEFAULT_OVERLAPPING = 0
-DEFAULT_SEMANTIC_CHUNK_SIZE = 4
+SCORE_PRECISION = 3
 
 BM25_K1 = 1.5
 BM25_B = 0.75
 
-PROJECT_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
-STOPWORD_PATH = os.path.join(PROJECT_ROOT, "data", "stopwords.txt")
+STOPWORDS_PATH = os.path.join(PROJECT_ROOT, "data", "stopwords.txt")
+
+CACHE_DIR = os.path.join(PROJECT_ROOT, "cache")
+
+DEFAULT_CHUNK_SIZE = 200
+DEFAULT_CHUNK_OVERLAP = 1
+DEFAULT_SEMANTIC_CHUNK_SIZE = 4
+
+MOVIE_EMBEDDINGS_PATH = os.path.join(CACHE_DIR, "movie_embeddings.npy")
+CHUNK_EMBEDDINGS_PATH = os.path.join(CACHE_DIR, "chunk_embeddings.npy")
+CHUNK_METADATA_PATH = os.path.join(CACHE_DIR, "chunk_metadata.json")
 
 
 def load_movies() -> list[dict]:
@@ -29,33 +30,25 @@ def load_movies() -> list[dict]:
 
 
 def load_stopwords() -> list[str]:
-    with open(STOPWORD_PATH, "r") as f:
-        data = f.read()
-        return data.splitlines()
-
-
-def tokenize_text(text: str) -> list[str]:
-    stopwords = load_stopwords()
-    stemmer = PorterStemmer()
-    text = preprocess_text(text)
-    tokens = text.split()
-    valid_tokens = []
-    for token in tokens:
-        if token and token not in stopwords:
-            valid_tokens.append(stemmer.stem(token))
-    return valid_tokens
-
-
-def preprocess_text(text: str) -> str:
-    text = text.lower()
-    translator = str.maketrans("", "", string.punctuation)
-    text = text.translate(translator)
-    return text
+    with open(STOPWORDS_PATH, "r") as f:
+        return f.read().splitlines()
 
 
 def format_search_result(
-    doc_id: int, title: str, document: str, score: float, **metadata: Any
+    doc_id: str, title: str, document: str, score: float, **metadata: Any
 ) -> dict[str, Any]:
+    """Create standardized search result
+
+    Args:
+        doc_id: Document ID
+        title: Document title
+        document: Display text (usually short description)
+        score: Relevance/similarity score
+        **metadata: Additional metadata to include
+
+    Returns:
+        Dictionary representation of search result
+    """
     return {
         "id": doc_id,
         "title": title,
