@@ -23,6 +23,7 @@ class InvertedIndex:
         self.doc_lengths: dict[int, int] = {}
 
         self.__index_path = os.path.join(CACHE_DIR, "index.pkl")
+        self.index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.__docmap_path = os.path.join(PROJECT_ROOT, "cache", "docmap.pkl")
         self.__term_freq_path = os.path.join(
             PROJECT_ROOT, "cache", "term_frequencies.pkl"
