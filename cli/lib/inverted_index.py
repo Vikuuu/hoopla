@@ -8,6 +8,7 @@ from .search_utils import (
     tokenize_text,
     load_movies,
     PROJECT_ROOT,
+    CACHE_DIR,
     BM25_K1,
     BM25_B,
     format_search_result,
@@ -21,7 +22,7 @@ class InvertedIndex:
         self.term_frequencies: dict[int, Counter] = defaultdict(Counter)
         self.doc_lengths: dict[int, int] = {}
 
-        self.__index_path = os.path.join(PROJECT_ROOT, "cache", "index.pkl")
+        self.__index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.__docmap_path = os.path.join(PROJECT_ROOT, "cache", "docmap.pkl")
         self.__term_freq_path = os.path.join(
             PROJECT_ROOT, "cache", "term_frequencies.pkl"
