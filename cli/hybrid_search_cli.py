@@ -1,7 +1,6 @@
 import argparse
 
-from lib.hybrid_search import normalize_score, weighted_search_command
-from lib.search_utils import HYBRID_ALPHA, DEFAULT_SEARCH_LIMIT
+from lib.hybrid_search import normalize_scores, weighted_search_command
 
 
 def main() -> None:
@@ -9,45 +8,52 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     normalize_parser = subparsers.add_parser(
-        "normalize", help="Normalize the provided list of numbers"
+        "normalize", help="Normalize a list of scores"
     )
     normalize_parser.add_argument(
-        "list",
-        type=float,
-        nargs="+",
-        help="List of float values",
+        "scores", nargs="+", type=float, help="List of scores to normalize"
     )
 
-    weighted_search_parser = subparsers.add_parser(
-        "weighted-search", help="Search using hybrid"
+    weighted_parser = subparsers.add_parser(
+        "weighted-search", help="Perform weighted hybrid search"
     )
-    weighted_search_parser.add_argument(
-        "query", type=str, help="Query to search data on."
-    )
-    weighted_search_parser.add_argument(
+    weighted_parser.add_argument("query", type=str, help="Search query")
+    weighted_parser.add_argument(
         "--alpha",
-        nargs="?",
-        default=HYBRID_ALPHA,
         type=float,
-        help="Tuning which side to give more preference to",
+        default=0.5,
+        help="Weight for BM25 vs semantic (0=all semantic, 1=all BM25, default=0.5)",
     )
-    weighted_search_parser.add_argument(
-        "--limit",
-        nargs="?",
-        default=DEFAULT_SEARCH_LIMIT,
-        type=int,
-        help="Limit the results returned",
+    weighted_parser.add_argument(
+        "--limit", type=int, default=5, help="Number of results to return (default=5)"
     )
 
     args = parser.parse_args()
 
     match args.command:
         case "normalize":
-            scores = normalize_score(args.list)
-            for score in scores:
+            normalized = normalize_scores(args.scores)
+            for score in normalized:
                 print(f"* {score:.4f}")
         case "weighted-search":
-            weighted_search_command(args.query, args.alpha, args.limit)
+            result = weighted_search_command(args.query, args.alpha, args.limit)
+
+            print(
+                f"Weighted Hybrid Search Results for '{result['query']}' (alpha={result['alpha']}):"
+            )
+            print(
+                f"  Alpha {result['alpha']}: {int(result['alpha'] * 100)}% Keyword, {int((1 - result['alpha']) * 100)}% Semantic"
+            )
+            for i, res in enumerate(result["results"], 1):
+                print(f"{i}. {res['title']}")
+                print(f"   Hybrid Score: {res.get('score', 0):.3f}")
+                metadata = res.get("metadata", {})
+                if "bm25_score" in metadata and "semantic_score" in metadata:
+                    print(
+                        f"   BM25: {metadata['bm25_score']:.3f}, Semantic: {metadata['semantic_score']:.3f}"
+                    )
+                print(f"   {res['document'][:100]}...")
+                print()
         case _:
             parser.print_help()
 

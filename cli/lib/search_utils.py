@@ -1,17 +1,15 @@
 import json
 import os
 from typing import Any
-import string
 
-from nltk import PorterStemmer
+DEFAULT_ALPHA = 0.5
 
 DEFAULT_SEARCH_LIMIT = 5
+DOCUMENT_PREVIEW_LENGTH = 100
 SCORE_PRECISION = 3
 
 BM25_K1 = 1.5
 BM25_B = 0.75
-
-HYBRID_ALPHA = 0.5
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
@@ -37,25 +35,6 @@ def load_movies() -> list[dict]:
 def load_stopwords() -> list[str]:
     with open(STOPWORDS_PATH, "r") as f:
         return f.read().splitlines()
-
-
-def tokenize_text(text: str) -> list[str]:
-    stopwords = load_stopwords()
-    stemmer = PorterStemmer()
-    text = preprocess_text(text)
-    tokens = text.split()
-    valid_tokens = []
-    for token in tokens:
-        if token and token not in stopwords:
-            valid_tokens.append(stemmer.stem(token))
-    return valid_tokens
-
-
-def preprocess_text(text: str) -> str:
-    text = text.lower()
-    translator = str.maketrans("", "", string.punctuation)
-    text = text.translate(translator)
-    return text
 
 
 def format_search_result(
