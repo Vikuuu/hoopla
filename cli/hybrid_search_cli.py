@@ -45,6 +45,12 @@ def main() -> None:
         default=5,
         help="Number of results to return (defalt=5)",
     )
+    rrf_search_parser.add_argument(
+        "--enhance",
+        type=str,
+        choices=["spell"],
+        help="Query enhancement method",
+    )
 
     args = parser.parse_args()
 
@@ -73,9 +79,11 @@ def main() -> None:
                 print(f"   {res['document'][:100]}...")
                 print()
         case "rrf-search":
-            result = rrf_search_command(args.query, args.k, args.limit)
-            print(f"RRF Hybrid Search Results for '{result['query']}' (k={result['k']}")
-            for i, res in enumerate(result["results"]):
+            result = rrf_search_command(args.query, args.k, args.limit, args.enhance)
+            print(
+                f"RRF Hybrid Search Results for '{result['query']}' (k={result['k']})"
+            )
+            for i, res in enumerate(result["results"], 1):
                 print(f"{i}. {res['title']}")
                 print(f"     Hybrid Score: {res.get('score', 0):.3f}")
                 metadata = res.get("metdata", {})

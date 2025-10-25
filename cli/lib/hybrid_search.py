@@ -1,5 +1,9 @@
 import os
 
+from dotenv import load_dotenv
+from google import genai
+
+
 from .keyword_search import InvertedIndex
 from .search_utils import (
     DEFAULT_ALPHA,
@@ -9,6 +13,8 @@ from .search_utils import (
     load_movies,
 )
 from .semantic_search import ChunkedSemanticSearch
+
+load_dotenv()
 
 
 class HybridSearch:
@@ -87,7 +93,7 @@ def combine_rrf_search_results(
                 "title": result["title"],
                 "document": result["document"],
                 "bm25_rank": 0.0,
-                "semantic_rank": result["rrf"],
+                "semantic_rank": result["rrf_score"],
             }
         else:
             combined_scores[doc_id]["semantic_rank"] = result["rrf_score"]
@@ -221,15 +227,21 @@ def weighted_search_command(
 
 
 def rrf_search_command(
-    query: str, k: int = DEFAULT_K, limit: int = DEFAULT_SEARCH_LIMIT
+    query: str,
+    k: int = DEFAULT_K,
+    limit: int = DEFAULT_SEARCH_LIMIT,
+    enhance: str = "",
 ) -> dict:
     movies = load_movies()
     searcher = HybridSearch(movies)
 
     original_query = query
+    if enhance != "":
+        query = update_query(original_query, enhance)
+
     search_limit = limit
 
-    results = searcher.rrf_search(original_query, k, search_limit)
+    results = searcher.rrf_search(query, k, search_limit)
 
     return {
         "original_query": original_query,
@@ -237,3 +249,27 @@ def rrf_search_command(
         "k": k,
         "results": results,
     }
+
+
+def update_query(query: str, method: str) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+
+    genai_query = f"""Fix any spelling errors in this movie search query.
+
+Only correct obvious typos. Don't change correctly spelled words.
+
+Query: "{query}"
+
+If no errors, return the original query.
+Corrected:"""
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=genai_query,
+    )
+
+    enhanced_query = response.text.strip()
+    print(f"Enhanced query ({method}): '{query}' -> '{enhanced_query}'\n")
+
+    return enhanced_query
