@@ -90,7 +90,7 @@ class InvertedIndex:
             raise ValueError("term must be a single token")
         token = tokens[0]
         doc_count = len(self.docmap)
-        term_doc_count = len(self.index[token])
+        term_doc_count = len(self.index[token]) if token in self.index else 0
         return math.log((doc_count - term_doc_count + 0.5) / (term_doc_count + 0.5) + 1)
 
     def get_bm25_tf(
