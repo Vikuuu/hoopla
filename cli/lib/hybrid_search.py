@@ -1,5 +1,6 @@
 import os
 import time
+import json
 
 from dotenv import load_dotenv
 from google import genai
@@ -246,7 +247,7 @@ def rrf_search_command(
         search_limit *= 5
 
     results = searcher.rrf_search(query, k, search_limit)
-    if rerank == "individual":
+    if rerank != "":
         results = rerank_method(query, results, rerank)
 
     return {
@@ -261,8 +262,9 @@ def rerank_method(query: str, documents: list[dict], method: str):
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
 
-    for doc in documents:
-        genai_prompt = f"""Rate how well this movie matches the search query.
+    if method == "individual":
+        for doc in documents:
+            genai_prompt = f"""Rate how well this movie matches the search query.
 
 Query: "{query}"
 Movie: {doc.get("title", "")} - {doc.get("document", "")}
@@ -276,17 +278,42 @@ Rate 0-10 (10 = perfect match).
 Give me ONLY the number in your response, no other text or explanation.
 
 Score:"""
-        print("sleeping for 10 sec")
-        time.sleep(10)
+            print("sleeping for 10 sec")
+            time.sleep(10)
 
+            response = client.models.generate_content(
+                model="gemini-2.0-flash-001",
+                contents=genai_prompt,
+            )
+            new_score = response.text.strip()
+            doc["new_score"] = new_score
+
+        return sorted(documents, key=lambda x: x["new_score"], reverse=True)
+
+    elif method == "batch":
+        genai_prompt = f"""Rank these movies by relevance to the search query.
+
+Query: "{query}"
+
+Movies:
+{documents}
+
+Return ONLY the IDs in order of relevance (best match first). Return a valid JSON list, nothing else. For example:
+
+[75, 12, 34, 2, 1]
+        """
         response = client.models.generate_content(
             model="gemini-2.0-flash-001",
             contents=genai_prompt,
         )
-        new_score = response.text.strip()
-        doc["new_score"] = new_score
+        new_rank_order = json.loads(response.text.strip())
+        print(documents)
+        for doc in documents:
+            doc_id = doc["id"]
+            rank = new_rank_order.index(doc_id)
+            doc["new_score"] = rank + 1
 
-    return sorted(documents, key=lambda x: x["new_score"], reverse=True)
+        return sorted(documents, key=lambda x: x["new_score"], reverse=True)
 
 
 def update_query(query: str, method: str) -> str:
