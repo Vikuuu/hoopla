@@ -51,6 +51,12 @@ def main() -> None:
         choices=["spell", "rewrite", "expand"],
         help="Query enhancement method",
     )
+    rrf_search_parser.add_argument(
+        "--rerank-method",
+        type=str,
+        choices=["individual"],
+        help="Rerank the returned results",
+    )
 
     args = parser.parse_args()
 
@@ -79,12 +85,28 @@ def main() -> None:
                 print(f"   {res['document'][:100]}...")
                 print()
         case "rrf-search":
-            result = rrf_search_command(args.query, args.k, args.limit, args.enhance)
+            print(args)
+            result = rrf_search_command(
+                args.query,
+                args.k,
+                args.limit,
+                args.enhance,
+                args.rerank_method,
+            )
+            if args.rerank_method:
+                print(
+                    f"Reranking top {args.limit} results using {args.rerank_method} method..."
+                )
             print(
                 f"RRF Hybrid Search Results for '{result['query']}' (k={result['k']})"
             )
             for i, res in enumerate(result["results"], 1):
                 print(f"{i}. {res['title']}")
+                (
+                    print(f"     Rerank score: {res.get("new_score")}")
+                    if args.rerank_method
+                    else None
+                )
                 print(f"     Hybrid Score: {res.get('score', 0):.3f}")
                 metadata = res.get("metdata", {})
             if "bm25_score" in metadata and "semantic_score" in metadata:

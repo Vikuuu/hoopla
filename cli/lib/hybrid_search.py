@@ -1,4 +1,5 @@
 import os
+import time
 
 from dotenv import load_dotenv
 from google import genai
@@ -231,31 +232,70 @@ def rrf_search_command(
     k: int = DEFAULT_K,
     limit: int = DEFAULT_SEARCH_LIMIT,
     enhance: str = "",
+    rerank: str = "",
 ) -> dict:
     movies = load_movies()
     searcher = HybridSearch(movies)
 
     original_query = query
-    if enhance != "":
+    if enhance is not None:
         query = update_query(original_query, enhance)
 
     search_limit = limit
+    if rerank == "individual":
+        search_limit *= 5
 
     results = searcher.rrf_search(query, k, search_limit)
+    if rerank == "individual":
+        results = rerank_method(query, results, rerank)
 
     return {
         "original_query": original_query,
         "query": query,
         "k": k,
-        "results": results,
+        "results": results[:limit],
     }
+
+
+def rerank_method(query: str, documents: list[dict], method: str):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+
+    for doc in documents:
+        genai_prompt = f"""Rate how well this movie matches the search query.
+
+Query: "{query}"
+Movie: {doc.get("title", "")} - {doc.get("document", "")}
+
+Consider:
+- Direct relevance to query
+- User intent (what they're looking for)
+- Content appropriateness
+
+Rate 0-10 (10 = perfect match).
+Give me ONLY the number in your response, no other text or explanation.
+
+Score:"""
+        print("sleeping for 10 sec")
+        time.sleep(10)
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=genai_prompt,
+        )
+        new_score = response.text.strip()
+        doc["new_score"] = new_score
+
+    return sorted(documents, key=lambda x: x["new_score"], reverse=True)
 
 
 def update_query(query: str, method: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
 
-    if method == "spell":
+    if method == "":
+        return ""
+    elif method == "spell":
         genai_query = f"""Fix any spelling errors in this movie search query.
 
 Only correct obvious typos. Don't change correctly spelled words.
