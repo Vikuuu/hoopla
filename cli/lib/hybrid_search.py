@@ -4,6 +4,7 @@ import json
 
 from dotenv import load_dotenv
 from google import genai
+from sentence_transformers import CrossEncoder
 
 
 from .keyword_search import InvertedIndex
@@ -312,6 +313,21 @@ Return ONLY the IDs in order of relevance (best match first). Return a valid JSO
             doc_id = doc["id"]
             rank = new_rank_order.index(doc_id)
             doc["new_score"] = rank + 1
+
+        return sorted(documents, key=lambda x: x["new_score"], reverse=True)
+    elif method == "cross_encoder":
+        pairs = []
+        for doc in documents:
+            pairs.append(
+                [
+                    query,
+                    f"{doc.get('title', '')} - {doc.get('description', '')}",
+                ]
+            )
+        cross_encoder = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L2-v2")
+        scores = cross_encoder.predict(pairs)
+        for i, doc in enumerate(documents):
+            doc["new_score"] = scores[i]
 
         return sorted(documents, key=lambda x: x["new_score"], reverse=True)
 
