@@ -240,7 +240,7 @@ def rrf_search_command(
     searcher = HybridSearch(movies)
 
     original_query = query
-    if enhance is not None:
+    if enhance is not None or enhance != "":
         query = update_query(original_query, enhance)
 
     search_limit = limit
@@ -337,7 +337,7 @@ def update_query(query: str, method: str) -> str:
     client = genai.Client(api_key=api_key)
 
     if method == "":
-        return ""
+        return query
     elif method == "spell":
         genai_query = f"""Fix any spelling errors in this movie search query.
 

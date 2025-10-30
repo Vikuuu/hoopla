@@ -28,7 +28,9 @@ class SemanticSearch:
 
     def generate_embedding(self, text):
         if not text or not text.strip():
-            raise ValueError("cannot generate embedding for empty text")
+            raise ValueError(
+                f"cannot generate embedding for empty text\ngiven text: {text}"
+            )
         return self.model.encode([text])[0]
 
     def build_embeddings(self, documents):
