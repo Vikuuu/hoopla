@@ -58,7 +58,7 @@ class HybridSearch:
             semantic_results,
             k,
         )
-        return combined[:limit]
+        return combined
 
 
 def rank_search_results(results: list[dict], k: int = DEFAULT_K) -> list[dict]:
@@ -240,16 +240,28 @@ def rrf_search_command(
     searcher = HybridSearch(movies)
 
     original_query = query
+    print(f"Original Query: {original_query}")
     if enhance is not None or enhance != "":
         query = update_query(original_query, enhance)
+        print(f"Query after enhancement: {query}")
 
     search_limit = limit
     if rerank == "individual":
         search_limit *= 5
 
     results = searcher.rrf_search(query, k, search_limit)
+    print("The results")
+    for res in results:
+        print(f"Title: {res["title"]}")
+        print(f"Score: {res["score"]}")
+        print(f"semantic: {res["metadata"]["semantic_score"]:.4f}")
+        print(f"keyword: {res["metadata"]["bm25_score"]:.4f}")
     if rerank != "":
         results = rerank_method(query, results, rerank)
+        print("The results afte re-ranking")
+        for res in results:
+            print(f"Title: {res["title"]}")
+            print(f"Score: {res["new_score"]}")
 
     return {
         "original_query": original_query,
@@ -336,9 +348,10 @@ def update_query(query: str, method: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
 
-    if method == "":
+    if method == "" or method is None:
         return query
-    elif method == "spell":
+
+    if method == "spell":
         genai_query = f"""Fix any spelling errors in this movie search query.
 
 Only correct obvious typos. Don't change correctly spelled words.
