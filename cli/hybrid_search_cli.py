@@ -4,6 +4,7 @@ from lib.hybrid_search import (
     normalize_scores,
     weighted_search_command,
     rrf_search_command,
+    evaluate_results,
 )
 
 
@@ -57,6 +58,11 @@ def main() -> None:
         choices=["individual", "batch", "cross_encoder"],
         help="Rerank the returned results",
     )
+    rrf_search_parser.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Evaluate the result",
+    )
 
     args = parser.parse_args()
 
@@ -91,7 +97,6 @@ def main() -> None:
                 args.k,
                 args.limit,
                 args.enhance,
-                args.rerank_method,
             )
             if args.rerank_method:
                 print(
@@ -116,6 +121,10 @@ def main() -> None:
 
             print(f" {res['document'][:100]}")
             print()
+
+            if args.evaluate:
+                evaluate_results(args.query, result["results"])
+
         case _:
             parser.print_help()
 
