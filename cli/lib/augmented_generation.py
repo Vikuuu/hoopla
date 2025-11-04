@@ -112,3 +112,41 @@ Answer:"""
 
     print("LLM Answer:")
     print(f"  {response.text.strip()}")
+
+
+def question_command(question: str, limit: int):
+    movies = load_movies()
+    searcher = HybridSearch(movies)
+
+    context = searcher.rrf_search(query=question, k=50, limit=limit)
+    prompt = f"""Answer the user's question based on the provided movies that are available on Hoopla.
+
+This should be tailored to Hoopla users. Hoopla is a movie streaming service.
+
+Question: {question}
+
+Documents:
+{context}
+
+Instructions:
+- Answer questions directly and concisely
+- Be casual and conversational
+- Don't be cringe or hype-y
+- Talk like a normal person would in a chat conversation
+
+Answer:"""
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=prompt,
+    )
+
+    print("Search Results:")
+    for i, doc in enumerate(context, 1):
+        print(f"  - {doc['title']}")
+
+    print("Answer:")
+    print(f"  {response.text.strip()}")

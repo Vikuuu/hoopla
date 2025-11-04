@@ -4,6 +4,7 @@ from lib.augmented_generation import (
     rag_command,
     summarize_command,
     citation_command,
+    question_command,
 )
 
 
@@ -39,6 +40,15 @@ def main():
         help="no. of results returned",
     )
 
+    question_parser = subparsers.add_parser("question", help="")
+    question_parser.add_argument("question", type=str, help="")
+    question_parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="no. of results returned",
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -52,6 +62,9 @@ def main():
         case "citations":
             query, limit = args.query, args.limit
             citation_command(query, limit)
+        case "question":
+            question, limit = args.question, args.limit
+            question_command(question, limit)
         case _:
             parser.print_help()
 
