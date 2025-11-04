@@ -58,7 +58,7 @@ class HybridSearch:
             semantic_results,
             k,
         )
-        return combined
+        return combined[:limit]
 
 
 def rank_search_results(results: list[dict], k: int = DEFAULT_K) -> list[dict]:

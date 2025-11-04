@@ -68,3 +68,47 @@ Provide a comprehensive 3–4 sentence answer that combines information from mul
 
     print("RAG Response:")
     print(f"  {response.text.strip()}")
+
+
+def citation_command(query: str, limit: int = 5):
+    movies = load_movies()
+    searcher = HybridSearch(movies)
+
+    results = searcher.rrf_search(query=query, k=50, limit=limit)
+    print(len(results))
+    prompt = f"""Answer the question or provide information based on the provided documents.
+
+This should be tailored to Hoopla users. Hoopla is a movie streaming service.
+
+If not enough information is available to give a good answer, say so but give as good of an answer as you can while citing the sources you have.
+
+Query: {query}
+
+Documents:
+{results}
+
+Instructions:
+- Provide a comprehensive answer that addresses the query
+- Cite sources using [1], [2], etc. format when referencing information
+- If sources disagree, mention the different viewpoints
+- If the answer isn't in the documents, say "I don't have enough information"
+- Be direct and informative
+
+Answer:"""
+
+    print(len(prompt))
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    client = genai.Client(api_key=api_key)
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash-001",
+        contents=prompt,
+    )
+
+    print("Search Results:")
+    for i, doc in enumerate(results, 1):
+        print(f"  - {doc['title']}")
+
+    print("LLM Answer:")
+    print(f"  {response.text.strip()}")

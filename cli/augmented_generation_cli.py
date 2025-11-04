@@ -1,6 +1,10 @@
 import argparse
 
-from lib.augmented_generation import rag_command, summarize_command
+from lib.augmented_generation import (
+    rag_command,
+    summarize_command,
+    citation_command,
+)
 
 
 def main():
@@ -26,6 +30,15 @@ def main():
         help="no. of results returned",
     )
 
+    citation_parser = subparsers.add_parser("citations", help="")
+    citation_parser.add_argument("query", type=str, help="Search query for summarizing")
+    citation_parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="no. of results returned",
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -36,6 +49,9 @@ def main():
         case "summarize":
             query, limit = args.query, args.limit
             summarize_command(query, limit)
+        case "citations":
+            query, limit = args.query, args.limit
+            citation_command(query, limit)
         case _:
             parser.print_help()
 
